@@ -1,76 +1,59 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+from sklearn.model_selection import train_test_split 
+
 
 class perceptron:
-    
+
     def __init__(self,fname):
         self.fname = fname
         self.df = pd.read_csv(self.fname,header=None, names = ["cost", "weight", "type"])
-        self.normalized_df = {}
+ 
 
-    def normalize(self):    
-        self.normalized_df = self.df.copy()
-        self.normalized_df[0] = (self.df[0]-self.df[0].min())/(self.df[0].max()-self.df[0].min())
-        self.normalized_df[1] = (self.df[1]-self.df[1].min())/(self.df[1].max()-self.df[1].min())
+    def _normalize(self):    
+        self.df['cost'] = (self.df['cost']-self.df['cost'].min())/(self.df['cost'].max()-self.df['cost'].min())
+        self.df['weight'] = (self.df['weight']-self.df['weight'].min())/(self.df['weight'].max()-self.df['weight'].min())
+
+    def _select_training_testing(self, test_sz):
+        train,test = train_test_split(self.df,test_size=test_sz)
+        return (train,test)
 
     def _output_soft(self,net,k):
         return 2/(1+np.exp(-2*k*net)) - 1
 
-    def _select_tr(self):
-        pass
+    #pass in learning constant, gain, number iterations, total error goal
+    def _train(self,train_data = pd.DataFrame,lc = 0.001,k = 0.1,max_ite = 5000, target_error = 0.001, w =[0.1, 0.1, 0.1]):
+        #weights and bias array
+        wb = w
+        ni = len(wb)
+        train = train_data.to_numpy()
+        dout = train_data['type'].to_numpy()
+        TE = 0.0
+        for _ in range(max_ite):
+            out = []
+            for (idx,pattern) in enumerate(train):
+                net = 0.0 
+                for i in range(ni):
+                    net = net + wb[i]*pattern[i]
 
-    def _select_test(self):
-        pass
-    #use weights from the first assignment?
-    def _train_soft(self,nump,gain,iterations = 5000,lc = 0.1,TE=0,k=0.0,weights = [0,0,0],pattern=[]):
-        #selected data
-        td = self._select_tr()
-        td = self.normalized_df
-        ni = 3
-        k = gain
-        w = weights
-        nump = td.shape[0]
-        alpha = lc
-        desired_out = [] 
-        #for designated number of iterations
-        for ite in range(0,iterations):
-            out = [0,0]
-            #Loop over the amount of rows in the data
-            for (idx,row) in enumerate(nump):
-                net = 0
-                for i in range(0,ni):
-                    net = net + weights[i]*td[row][i]*alpha
-                
-                out[row] = self._output_soft(net,k)
-                err = desired_out[row] - out[row]
-                if err <= TE:
-                    break 
-                learn = alpha*err
-                #update the weights
-                for i in range(0,ni):
-                    w[i] = w[i] + learn * td[row][i]
+                out.append(self._output_soft(net,k))
+                err = dout[idx] - out[idx]
+                learn = lc * err
+                for i in range(ni):
+                    wb[i] = wb[i] + learn*pattern[i]
+        
+        return wb
 
 
-    def _test(self):
-        test = self._select_test()
-
-    def total_error(self):
-        pass
-
-    def plot(self):
-        line = []
-        plt.figure()
-        plt.scatter(self.normalized_df['weight'],self.normalized_df['cost'],c=self.normalized_df['type'])
-        plt.xlabel('cost (USD)')
-        plt.ylabel('weight') 
-        plt.title('Weight vs Cost A')
-        plt.savefig('../plots/plot_a.png')
+    def predict(self):
+        self._normalize()
+        train,test = self._select_training_testing(0.25)
+        self._train(train_data=train,lc=0.001,k=0.2,max_ite= 5000,target_error = 0.00001, w = [0.1,0.1,0.1])
 
 def main():
-    #A: y = 1.03353 - 1.07843x
-    # => y + 1.07843x < 1.03353
-    pass
+    perc = perceptron('groupA.txt')
+    w = perc.predict()
+    print(w)
 
-if __name__ == '__main__':
-    main()
+main()
