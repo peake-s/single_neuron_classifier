@@ -23,31 +23,50 @@ class perceptron:
         return 2/(1+np.exp(-2*k*net)) - 1
 
     #pass in learning constant, gain, number iterations, total error goal
-    def _train(self,train_data = pd.DataFrame,lc = 0.001,k = 0.1,max_ite = 5000, target_error = 0.001, nw = 3):
-        #weights and bias array
+    def _train(self,train_data = pd.DataFrame,lc = 0.005,k = 0.2,max_ite = 5000, target_error = 0.001, nw = 3):
+        #weights and bias array -setting random weights -0.5 - 0.5
         wb = np.random.uniform(size = nw, low = -0.5, high = 0.5)
-
+        bias = 1.0
         ni = nw
         train = train_data[["weight","cost"]].to_numpy()
         dout = train_data['type'].to_numpy()
         TE = 0.0
         for _ in range(max_ite):
+            #temporary outputs array
             out = []
+
             for (idx,p) in enumerate(train):
                 net = 0.0
-                pattern = [p[0],p[1],1.0]
 
-                for i in range(ni):
-                    net = net + wb[i]*pattern[i]
+                #this is the input data with a bias that I do not understand how to get it
+                pattern = [p[0],p[1],bias]
+                #finding sum - could maybe just be the dot product
+                #for i in range(ni):
+                #    net = net + wb[i]*pattern[i]
+                #net += bias
+                #print(net,np.dot(pattern,wb))
 
+                #shorthand way of doing the loop from above
+                net = np.dot(pattern,wb)
+                #maybe dont need to store this in a list
                 out.append(self._output_soft(net,k))
+                #error to update learning
                 err = dout[idx] - out[idx]
-                
-                learn = lc * err
 
+                TE += (err)**2
+                if TE <= target_error:
+                    break
+                #print(err)
+                learn = lc * err
+                #updating weights
                 for i in range(ni):
                     wb[i] = wb[i] + learn*pattern[i]
-        
+
+            #if TE <= target_error:
+            #    break
+            print(f"Total error {TE}")
+            TE = 0
+
         return wb
     
     def _test(self,test_data,weights):
@@ -58,14 +77,17 @@ class perceptron:
 
         for i,p in enumerate(test):
             pattern = [p[0],p[1],1.0]
-            
+
 
     def plot(self,weights):
         
-        xint = (0,-weights[2]/weights[1])
-        yint = (-weights[2]/weights[0],0)
-        m = -(weights[2]/weights[1])/(weights[2]/weights[0])
-        y = m*self.df["weight"] + (-weights[2]/weights[1])
+        # xint = (0,-weights[2]/weights[1])
+        # yint = (-weights[2]/weights[0],0)
+        # m = -(weights[2]/weights[1])/(weights[2]/weights[0])
+        # y = m*self.df["weight"] + (-weights[2]/weights[1])
+
+        #m = -(weights[2]/weights[1])/(weights[2]/weights[0])
+        #y = m*self.df["weight"] + (-weights[2]/weights[1])
 
         plt.figure()
         plt.scatter(self.df["weight"],self.df["cost"],c=self.df["type"])
@@ -80,13 +102,15 @@ class perceptron:
     def predict(self):
         self._normalize()
         train,test = self._select_training_testing(0.25)
-        return self._train(train_data=train,lc=0.001,k=0.2,max_ite= 5000,target_error = 0.00001, nw =3)
+        return self._train(train_data=train,lc=0.001,k=0.2,max_ite= 10,target_error = 0.00001, nw = 3)
         
 
 def main():
     perc = perceptron('groupA.txt')
     w = perc.predict()
+    print(w)
     perc.plot(w)
     
 
-main()
+if __name__ == '__main__':
+    main()
