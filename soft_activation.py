@@ -43,7 +43,7 @@ class perceptron:
             for (idx,p) in enumerate(train):
                 net = 0.0
 
-                #this is the input data with a bias that I do not understand how to get it
+                #this is the input data with a bias
                 pattern = [p[0],p[1],bias]
 
                 #finding sum - could maybe just be the dot product
@@ -88,22 +88,36 @@ class perceptron:
             #finding output
             out = self._output_soft(net,gain)
             #testing the outputs
-            if out >= 1 and actual[idx] == 1:
+            print(f"out: {out} dout: {actual[idx]}")
+            if out > 0.5 and actual[idx] == 1:
+                self.predicted_correct += 1
+            elif out <+ 0.5 and actual[idx] == 0:
                 self.predicted_correct += 1
             else:
                 self.predicted_incorrect += 1
         
         print(f"predicted_correct {self.predicted_correct} predicted incorrect {self.predicted_incorrect}")
 
+    def line_equatuation(self,weights):
+        lines = []
+        #assumes weights = [x1,x2,bias]
+        for i in range(len(weights)):
+            m = -(weights[1]/weights[0])
+            #y intercept
+            b = -(weights[2]/weights[0])
+            lines.append([m,b])
 
-    def plot(self,weights):
+        return lines
+
+    def plot_final_weights(self,weights):
         #weights: [x1,x2,bias]
         xint = (-weights[2]/weights[1],0)
         yint = (0,-weights[2]/weights[0])
         #slope
-        m = -(weights[0]/weights[1])
+        #m = -(weights[0]/weights[1])
+        m = -(weights[1]/weights[0])
         #y intercept
-        b = -(weights[2]/weights[1])
+        b = -(weights[2]/weights[0])
         #get values to plot
         vals = [m * i + b for i in self.df['weight']]
 
@@ -116,19 +130,41 @@ class perceptron:
 
         plt.show()
 
+    def plot_all(self,weights):
+        
+        fig,ax = plt.subplots(1,1)
+        ax.set_xlim(-0.95,1.1)
+        ax.set_ylim(-0.95,1.1)
+        plt.scatter(self.df["weight"],self.df["cost"],c=self.df["type"])
+        plt.ylabel('cost (USD)')
+        plt.xlabel('weight')
+        plt.title(f"Cost vs Weight {self.fname}")
+        x_lin = np.linspace(0,1,self.df.shape[0])
+        lines = self.line_equatuation(self.weights_arr)
+        for idx,line in enumerate(lines):
+            if idx == len(lines)-1:
+                ax.plot(x_lin,line[0]*x_lin + line[1], c = 'k', ls = '-', lw = 2)
+            else:
+                ax.plot(x_lin,line[0]*x_lin + line[1], c = 'r', ls = '--', lw = 1.5)
+        
+        plt.show()
+
     def predict(self):
         self._normalize()
         train,test = self._select_training_testing(0.25)
-        w = self._train_soft(train_data=train,lc=0.001,k=0.1,max_ite= 5000,target_error = 0.00001, nw = 3)
+        w = self._train_soft(train_data=train,lc=0.1,k=0.1,max_ite= 5000,target_error = 0.00001, nw = 3)
         self._test(test,w,0.2)
         return w
+
+    def save(self):
+        self.df.to_csv('a_norm.csv',index = False)
 
 def main():
     perc = perceptron('groupA.txt')
     w = perc.predict()
     print(w)
-    perc.plot(w)
-    
+    perc.plot_final_weights(w)
+    #perc.save()
 
 if __name__ == '__main__':
     main()
