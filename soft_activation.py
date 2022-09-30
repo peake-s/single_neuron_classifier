@@ -47,11 +47,11 @@ class perceptron:
                 pattern = [p[0],p[1],bias]
 
                 #finding sum - could maybe just be the dot product
-                #for i in range(ni):
-                #    net = net + wb[i]*pattern[i]
+                for i in range(ni):
+                    net = net + wb[i]*pattern[i]
 
                 #shorthand way of doing the loop from above
-                net = np.dot(pattern,wb)
+                #net = np.dot(pattern,wb)
                 
                 #find the output based on the net
                 out = self._output_soft(net,k)
@@ -71,7 +71,7 @@ class perceptron:
                 print(TE)
                 break
 
-            TE = 0
+            TE = 0.0
 
         return wb
     
@@ -97,7 +97,7 @@ class perceptron:
 
 
     def plot(self,weights):
-        
+        #weights: [x1,x2,bias]
         xint = (-weights[2]/weights[1],0)
         yint = (0,-weights[2]/weights[0])
         #slope
@@ -113,20 +113,18 @@ class perceptron:
         plt.xlabel('weight')
         plt.title(f"Cost vs Weight {self.fname}")
         plt.plot(self.df['weight'],vals,'b')
-        
-        #plt.plot(x_lin,(weights[1]*x_lin/weights[0]),'y-')
 
         plt.show()
 
     def predict(self):
         self._normalize()
         train,test = self._select_training_testing(0.25)
-        w = self._train_soft(train_data=train,lc=0.001,k=0.2,max_ite= 5000,target_error = 0.00001, nw = 3)
+        w = self._train_soft(train_data=train,lc=0.001,k=0.1,max_ite= 5000,target_error = 0.00001, nw = 3)
         self._test(test,w,0.2)
         return w
 
 def main():
-    perc = perceptron('groupA')
+    perc = perceptron('groupA.txt')
     w = perc.predict()
     print(w)
     perc.plot(w)
