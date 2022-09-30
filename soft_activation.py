@@ -126,6 +126,7 @@ class perceptron:
         plt.ylabel('cost (USD)')
         plt.xlabel('weight')
         plt.title(f"Cost vs Weight {self.fname}")
+        #could also just plot the intercepts
         plt.plot(self.df['weight'],vals,'b')
 
         plt.show()
@@ -134,7 +135,7 @@ class perceptron:
         
         fig,ax = plt.subplots(1,1)
         ax.set_xlim(-0.95,1.1)
-        ax.set_ylim(-0.95,1.1)
+        ax.set_ylim(0,1.1)
         plt.scatter(self.df["weight"],self.df["cost"],c=self.df["type"])
         plt.ylabel('cost (USD)')
         plt.xlabel('weight')
