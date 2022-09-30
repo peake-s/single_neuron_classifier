@@ -8,7 +8,10 @@ class perceptron:
     def __init__(self,fname):
         self.fname = fname
         self.df = pd.read_csv(self.fname,header=None, names = ["cost", "weight", "type"])
-        self.results = []
+        #going to use to plot all weights
+        self.weights_arr = []
+        self.predicted_correct = 0
+        self.predicted_incorrect = 0
  
 
     def _normalize(self):    
@@ -20,93 +23,110 @@ class perceptron:
         return (train,test)
 
     def _output_soft(self,net,k):
+        #equation from the notes
         return 2/(1+np.exp(-2*k*net)) - 1
 
     #pass in learning constant, gain, number iterations, total error goal
-    def _train(self,train_data = pd.DataFrame,lc = 0.005,k = 0.2,max_ite = 5000, target_error = 0.001, nw = 3):
+    def _train_soft(self,train_data = pd.DataFrame,lc = 0.005,k = 0.2,max_ite = 5000, target_error = 0.001, nw = 3):
         #weights and bias array -setting random weights -0.5 - 0.5
         wb = np.random.uniform(size = nw, low = -0.5, high = 0.5)
         bias = 1.0
+        #num inputs = num weights this is entirely unnecessary
         ni = nw
+        #seperating the patterns from the output
         train = train_data[["weight","cost"]].to_numpy()
         dout = train_data['type'].to_numpy()
         TE = 0.0
         for _ in range(max_ite):
-            #temporary outputs array
-            out = []
-
+            out = 0.0
+            self.weights_arr.append(wb)
             for (idx,p) in enumerate(train):
                 net = 0.0
 
                 #this is the input data with a bias that I do not understand how to get it
                 pattern = [p[0],p[1],bias]
+
                 #finding sum - could maybe just be the dot product
                 #for i in range(ni):
                 #    net = net + wb[i]*pattern[i]
-                #net += bias
-                #print(net,np.dot(pattern,wb))
 
                 #shorthand way of doing the loop from above
                 net = np.dot(pattern,wb)
-                #maybe dont need to store this in a list
-                out.append(self._output_soft(net,k))
+                
+                #find the output based on the net
+                out = self._output_soft(net,k)
+                
                 #error to update learning
-                err = dout[idx] - out[idx]
+                err = dout[idx] - out
 
+                #calculate the total error for this iteration
                 TE += (err)**2
-                if TE <= target_error:
-                    break
-                #print(err)
+                #learning rate = alpha * the error
                 learn = lc * err
-                #updating weights
+               #print(f"pattern = {pattern} wb: {wb} error: {err} TE {TE} learn {learn} out {out[idx]}")
                 for i in range(ni):
                     wb[i] = wb[i] + learn*pattern[i]
 
-            #if TE <= target_error:
-            #    break
-            print(f"Total error {TE}")
+            if TE <= target_error:
+                print(TE)
+                break
+
             TE = 0
 
         return wb
     
-    def _test(self,test_data,weights):
+    def _test(self,test_data,weights,gain):
         test = test_data[["weight","cost"]].to_numpy()
-        actual = test['type'].to_numpy()
-        predicted_correct = 0
-        predicted_incorrect = 0
-
-        for i,p in enumerate(test):
-            pattern = [p[0],p[1],1.0]
+        actual = test_data['type'].to_numpy()
+        self.predicted_correct = 0
+        self.predicted_incorrect = 0
+        bias = 1.0
+        for (idx,p) in enumerate(test):
+            pattern = [p[0],p[1],bias]
+            #finding sum
+            net = np.dot(pattern,weights)
+            #finding output
+            out = self._output_soft(net,gain)
+            #testing the outputs
+            if out >= 1 and actual[idx] == 1:
+                self.predicted_correct += 1
+            else:
+                self.predicted_incorrect += 1
+        
+        print(f"predicted_correct {self.predicted_correct} predicted incorrect {self.predicted_incorrect}")
 
 
     def plot(self,weights):
         
-        # xint = (0,-weights[2]/weights[1])
-        # yint = (-weights[2]/weights[0],0)
-        # m = -(weights[2]/weights[1])/(weights[2]/weights[0])
-        # y = m*self.df["weight"] + (-weights[2]/weights[1])
-
-        #m = -(weights[2]/weights[1])/(weights[2]/weights[0])
-        #y = m*self.df["weight"] + (-weights[2]/weights[1])
+        xint = (-weights[2]/weights[1],0)
+        yint = (0,-weights[2]/weights[0])
+        #slope
+        m = -(weights[0]/weights[1])
+        #y intercept
+        b = -(weights[2]/weights[1])
+        #get values to plot
+        vals = [m * i + b for i in self.df['weight']]
 
         plt.figure()
         plt.scatter(self.df["weight"],self.df["cost"],c=self.df["type"])
         plt.ylabel('cost (USD)')
         plt.xlabel('weight')
-        plt.title('Cost vs Weight A')
-
-        plt.plot(self.df["weight"],y,'y-')
+        plt.title(f"Cost vs Weight {self.fname}")
+        plt.plot(self.df['weight'],vals,'b')
+        
+        #plt.plot(x_lin,(weights[1]*x_lin/weights[0]),'y-')
 
         plt.show()
 
     def predict(self):
         self._normalize()
         train,test = self._select_training_testing(0.25)
-        return self._train(train_data=train,lc=0.001,k=0.2,max_ite= 10,target_error = 0.00001, nw = 3)
-        
+        w = self._train_soft(train_data=train,lc=0.001,k=0.2,max_ite= 5000,target_error = 0.00001, nw = 3)
+        self._test(test,w,0.2)
+        return w
 
 def main():
-    perc = perceptron('groupA.txt')
+    perc = perceptron('groupA')
     w = perc.predict()
     print(w)
     perc.plot(w)
