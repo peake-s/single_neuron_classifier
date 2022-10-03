@@ -41,6 +41,7 @@ class perceptron:
         for _ in range(max_ite):
             out = 0.0
             self.weights_arr.append(wb)
+            #bias = bias*wb[2]
             for (idx,p) in enumerate(train):
                 net = 0.0
 
@@ -48,13 +49,12 @@ class perceptron:
                 pattern = [p[0],p[1],bias]
 
                 #finding sum - could maybe just be the dot product
-                #for i in range(ni-1):
-                #    net = net + wb[i]*pattern[i]
-                #net += bias
+                for i in range(0,ni):
+                   net = net + wb[i]*pattern[i]
                 
                 #shorthand way of doing the loop from above
-                net = np.dot(pattern,wb)
-                
+                #net = np.dot(pattern,wb)
+
                 #find the output based on the net
                 out = self._output_soft(net,k)
                 
@@ -66,7 +66,7 @@ class perceptron:
                 #learning rate = alpha * the error
                 learn = lc * err
                #print(f"pattern = {pattern} wb: {wb} error: {err} TE {TE} learn {learn} out {out[idx]}")
-                for i in range(ni):
+                for i in range(0,ni):
                     wb[i] = wb[i] + learn*pattern[i]
 
             if TE <= target_error:
@@ -90,9 +90,9 @@ class perceptron:
             #finding output
             out = self._output_soft(net,gain)
             #testing the outputs
-            if out > 0.5 and actual[idx] == 1:
+            if out >= 0.0 and actual[idx] == 1:
                 self.predicted_correct += 1
-            elif out <= 0.5 and actual[idx] == 0:
+            elif out < 0.0 and actual[idx] == 0:
                 self.predicted_correct += 1
             else:
                 self.predicted_incorrect += 1
@@ -101,11 +101,11 @@ class perceptron:
 
     def line_equatuation(self,weights):
         lines = []
-        #assumes weights = [x1,x2,bias]
+        #assumes weights = [x1*weight,x2*cost,bias]
         for i in range(len(weights)):
-            m = -1 * (weights[i][1]/weights[i][0])
+            m = -(weights[i][0]/weights[i][1])
             #y intercept
-            b = -1 * (weights[i][2]/weights[i][0])
+            b = -(weights[i][2]/weights[i][1])
             lines.append([m,b])
 
         return lines
@@ -114,11 +114,13 @@ class perceptron:
         #weights: [x1,x2,bias]
         xint = (-weights[2]/weights[1],0)
         yint = (0,-weights[2]/weights[0])
+
         #slope
-        #m = -(weights[0]/weights[1])
-        m = -1 * (weights[1]/weights[0])
+        m = -(weights[0]/weights[1])
+
         #y intercept
-        b = -1 * (weights[2]/weights[1])
+        b = -(weights[2]/weights[1])
+
         #get values to plot
         vals = [m * i + b for i in self.df['weight']]
 
@@ -155,7 +157,7 @@ class perceptron:
     def predict(self):
         self._normalize()
         train,test = self._select_training_testing(0.25)
-        w = self._train_soft(train_data=train,lc=0.001,k=0.2,max_ite= 1000,target_error = 0.00001, nw = 3)
+        w = self._train_soft(train_data=train,lc=0.05,k=0.2,max_ite= 1000,target_error = 0.00001, nw = 3)
         self._test(test,w,0.2)
         return w
 
@@ -171,7 +173,7 @@ def main():
     w = perc.predict()
     print(w)
     perc.plot_all(w)
-    perc.save_weights()
+    #perc.save_weights()
 
 if __name__ == '__main__':
     main()
