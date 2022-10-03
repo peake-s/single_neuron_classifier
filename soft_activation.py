@@ -13,6 +13,7 @@ class perceptron:
         self.predicted_correct = 0
         self.predicted_incorrect = 0
         self.weights_df = pd.DataFrame(columns = ["x1", "x2", "b"])
+        self.te = 0
  
 
     def _normalize(self):    
@@ -20,7 +21,7 @@ class perceptron:
         self.df['weight'] = (self.df['weight']-self.df['weight'].min())/(self.df['weight'].max()-self.df['weight'].min())
 
     def _select_training_testing(self, test_sz):
-        train,test = train_test_split(self.df,test_size=test_sz)
+        train,test = train_test_split(self.df,train_size = 1-test_sz, test_size=test_sz)
         return (train,test)
 
     def _output_soft(self,net,k):
@@ -30,7 +31,8 @@ class perceptron:
     #pass in learning constant, gain, number iterations, total error goal
     def _train_soft(self,train_data = pd.DataFrame,lc = 0.005,k = 0.2,max_ite = 5000, target_error = 0.001, nw = 3):
         #weights and bias array -setting random weights -0.5 - 0.5
-        wb = np.random.uniform(size = nw, low = -0.5, high = 0.5)
+        #wb = np.random.uniform(size = nw, low = -0.5, high = 0.5)
+        wb = [1.0,1.0,1.0]
         bias = 1.0
         #num inputs = num weights this is entirely unnecessary
         ni = nw
@@ -65,14 +67,16 @@ class perceptron:
                 TE += (err)**2
                 #learning rate = alpha * the error
                 learn = lc * err
+
                #print(f"pattern = {pattern} wb: {wb} error: {err} TE {TE} learn {learn} out {out[idx]}")
                 for i in range(0,ni):
                     wb[i] = wb[i] + learn*pattern[i]
+                    #print(wb[i])
 
             if TE <= target_error:
                 print(TE)
                 break
-
+            self.te = TE
             TE = 0.0
 
         return wb
@@ -122,7 +126,7 @@ class perceptron:
         b = -(weights[2]/weights[1])
 
         #get values to plot
-        vals = [m * i + b for i in self.df['weight']]
+        vals = [(m * i) + b for i in self.df['weight']]
 
         plt.figure()
         plt.scatter(self.df["weight"],self.df["cost"],c=self.df["type"])
@@ -157,13 +161,15 @@ class perceptron:
     def predict(self):
         self._normalize()
         train,test = self._select_training_testing(0.25)
-        w = self._train_soft(train_data=train,lc=0.05,k=0.2,max_ite= 1000,target_error = 0.00001, nw = 3)
+        w = self._train_soft(train_data=train,lc=0.05,k=0.2,max_ite= 5000,target_error = 0.01, nw = 3)
         self._test(test,w,0.2)
         return w
 
+#
     def save(self):
         self.df.to_csv('a_norm.csv',index = False)
     
+    #save a csv of the weights
     def save_weights(self):
         self.weights_df = pd.DataFrame(self.weights_arr,columns = ["x1", "x2", "b"])
         self.weights_df.to_csv('a_weights.csv',index = False)
@@ -171,9 +177,9 @@ class perceptron:
 def main():
     perc = perceptron('groupA.txt')
     w = perc.predict()
-    print(w)
+    print(f"weights: {w} TE: {perc.te}")
     perc.plot_all(w)
-    #perc.save_weights()
+    perc.save_weights()
 
 if __name__ == '__main__':
     main()
