@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+import math
 from sklearn.model_selection import train_test_split 
 
 class perceptron:
@@ -28,7 +29,7 @@ class perceptron:
 
     def _output_soft(self,net,k):
         #equation from the notes
-        return (2/(1+np.exp(-2*k*net))) - 1
+        return (1/(1+math.exp(-k*net)))
 
     #pass in learning constant, gain, number iterations, total error goal
     def _train_soft(self,train_data = pd.DataFrame,lc = 0.005,k = 0.2,max_ite = 5000, target_error = 0.001, nw = 3):
@@ -61,7 +62,7 @@ class perceptron:
 
                 #find the output based on the net
                 out = self._output_soft(net,k)
-                
+                print(out)
                 #error to update learning
                 err = dout[idx] - out
 
@@ -94,6 +95,7 @@ class perceptron:
     def _train_hard(self,train_data = pd.DataFrame,lc = 0.005,k = 0.2,max_ite = 5000, target_error = 0.001, nw = 3):
         #weights and bias array -setting random weights -0.5 - 0.5
         wb = np.random.uniform(size = nw, low = -0.5, high = 0.5)
+        wb = [-0.000328164313,0.27589935,-0.410002677]
         bias = 1.0
         print(f"inital weights (x1,x2,bias): {wb}")
         print(f"alpha {lc} gain {k} max iterations {max_ite} target_error total error {target_error}")
@@ -144,7 +146,7 @@ class perceptron:
 
         return wb
     
-    def _test(self,test_data,weights,gain):
+    def _test_hard(self,test_data,weights,gain):
         test = test_data[["weight","cost"]].to_numpy()
         actual = test_data['type'].to_numpy()
         self.predicted_correct = 0
@@ -170,7 +172,43 @@ class perceptron:
             elif out <= 0.0 and actual[idx] == 1:
                 false_positive += 1
                 self.predicted_incorrect += 1
-            elif out > 0 and actual[idx] == 0:
+            elif out > 0.0 and actual[idx] == 0:
+                false_negative += 1
+                self.predicted_incorrect += 1
+        
+        print(f"predicted_correct {self.predicted_correct} predicted incorrect {self.predicted_incorrect}")
+        print(f"true negative: {true_negative}")
+        print(f"false negative: {false_negative}")
+        print(f"true positive: {true_positive}")
+        print(f"false positive: {false_positive}")
+
+    def _test_soft(self,test_data,weights,gain):
+        test = test_data[["weight","cost"]].to_numpy()
+        actual = test_data['type'].to_numpy()
+        self.predicted_correct = 0
+        self.predicted_incorrect = 0
+        bias = 1.0
+        true_positive = 0
+        true_negative = 0
+        false_positive = 0
+        false_negative = 0
+        for (idx,p) in enumerate(test):
+            pattern = [p[0],p[1],bias]
+            #finding sum
+            net = np.dot(pattern,weights)
+            #finding output
+            out = self._output_soft(net,gain)
+            #testing the outputs
+            if out > 0.5 and actual[idx] == 1:
+                self.predicted_correct += 1
+                true_positive += 1
+            elif out <= 0.5 and actual[idx] == 0:
+                self.predicted_correct += 1
+                true_negative += 1
+            elif out <= 0.5 and actual[idx] == 1:
+                false_positive += 1
+                self.predicted_incorrect += 1
+            elif out > 0.5 and actual[idx] == 0:
                 false_negative += 1
                 self.predicted_incorrect += 1
         
@@ -246,9 +284,10 @@ class perceptron:
         w = []
         if type == 'soft':
             w = self._train_soft(train_data=self.train,lc=lc,k=k,max_ite= max_ite,target_error = target_error, nw = nw)
+            self._test_soft(self.test,w,k)
         elif type == 'hard':
             w = self._train_hard(train_data=self.train,lc=lc,k=k,max_ite= max_ite,target_error = target_error, nw = nw)
-        self._test(self.test,w,k)
+            self._test_hard(self.test,w,k)
         return w
 
 #
@@ -261,8 +300,8 @@ class perceptron:
         self.weights_df.to_csv('a_weights.csv',index = False)
 
 def main():
-    perc = perceptron('groupA.txt')
-    w = perc.predict(type = 'hard',lc=0.1,k=0.2,max_ite= 5000,target_error = 0.00001, nw = 3)
+    perc = perceptron('groupC.txt')
+    w = perc.predict(type = 'soft',lc=0.05,k=0.1,max_ite= 5000,target_error = 40, nw = 3)
     print(f"weights: {w} TE: {perc.te}")
     perc.plot_all()
     #perc.save_weights()
