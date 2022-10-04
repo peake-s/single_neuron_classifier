@@ -62,7 +62,7 @@ class perceptron:
 
                 #find the output based on the net
                 out = self._output_soft(net,k)
-                print(out)
+      
                 #error to update learning
                 err = dout[idx] - out
 
@@ -95,7 +95,7 @@ class perceptron:
     def _train_hard(self,train_data = pd.DataFrame,lc = 0.005,k = 0.2,max_ite = 5000, target_error = 0.001, nw = 3):
         #weights and bias array -setting random weights -0.5 - 0.5
         wb = np.random.uniform(size = nw, low = -0.5, high = 0.5)
-        wb = [-0.000328164313,0.27589935,-0.410002677]
+        wb = [0.38460708,0.26291698,0.27600823]
         bias = 1.0
         print(f"inital weights (x1,x2,bias): {wb}")
         print(f"alpha {lc} gain {k} max iterations {max_ite} target_error total error {target_error}")
@@ -161,7 +161,7 @@ class perceptron:
             #finding sum
             net = np.dot(pattern,weights)
             #finding output
-            out = self._output_soft(net,gain)
+            out = self._output_hard(net)
             #testing the outputs
             if out > 0.0 and actual[idx] == 1:
                 self.predicted_correct += 1
@@ -170,7 +170,7 @@ class perceptron:
                 self.predicted_correct += 1
                 true_negative += 1
             elif out <= 0.0 and actual[idx] == 1:
-                false_positive += 1
+                false_positive+= 1
                 self.predicted_incorrect += 1
             elif out > 0.0 and actual[idx] == 0:
                 false_negative += 1
@@ -300,8 +300,8 @@ class perceptron:
         self.weights_df.to_csv('a_weights.csv',index = False)
 
 def main():
-    perc = perceptron('groupC.txt')
-    w = perc.predict(type = 'soft',lc=0.05,k=0.1,max_ite= 5000,target_error = 40, nw = 3)
+    perc = perceptron('groupB.txt')
+    w = perc.predict(type = 'hard',lc=0.1,k=0.1,max_ite= 5000,target_error = 40, nw = 3)
     print(f"weights: {w} TE: {perc.te}")
     perc.plot_all()
     #perc.save_weights()
