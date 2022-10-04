@@ -14,6 +14,8 @@ class perceptron:
         self.predicted_incorrect = 0
         self.weights_df = pd.DataFrame(columns = ["x1", "x2", "b"])
         self.te = 0
+        self.train = None
+        self.test = None
  
 
     def _normalize(self):    
@@ -212,16 +214,16 @@ class perceptron:
         #plt.plot(xint,yint)
         plt.show()
 
-    def plot_all(self,weights):
+    def _plot_all(self,data,title = '{self.fname}'):
         
         fig,ax = plt.subplots(1,1)
         ax.set_xlim(0,1.2)
         ax.set_ylim(0,1.2)
-        plt.scatter(self.df["weight"],self.df["cost"],c=self.df["type"])
+        plt.scatter(data["weight"],data["cost"],c=data["type"])
         plt.ylabel('cost (USD)')
         plt.xlabel('weight')
-        plt.title(f"Cost vs Weight {self.fname}")
-        x_lin = np.linspace(0.0,1.0,self.df.shape[0])
+        plt.title(title)
+        x_lin = np.linspace(0.0,1.0,data.shape[0])
         lines = self.line_equatuation(self.weights_arr)
         for idx,line in enumerate(lines):
             m,b = line
@@ -232,16 +234,21 @@ class perceptron:
                 ax.plot(x_lin,m*x_lin + b, c = 'r', ls = '--', lw = 1.5)
         
         plt.show()
+    
+    def plot_all(self):
+        self._plot_all(self.test, title = f"Cost vs Weight {self.fname} test data")
+        self._plot_all(self.train, title = f"Cost vs Weight {self.fname} train data")
+
 
     def predict(self,type = 'soft', lc=0.1,k=0.2,max_ite= 5000,target_error = 0.01, nw = 3):
         self._normalize()
-        train,test = self._select_training_testing(0.25)
+        self.train,self.test = self._select_training_testing(0.25)
         w = []
         if type == 'soft':
-            w = self._train_soft(train_data=train,lc=lc,k=k,max_ite= max_ite,target_error = target_error, nw = nw)
+            w = self._train_soft(train_data=self.train,lc=lc,k=k,max_ite= max_ite,target_error = target_error, nw = nw)
         elif type == 'hard':
-            w = self._train_hard(train_data=train,lc=lc,k=k,max_ite= max_ite,target_error = target_error, nw = nw)
-        self._test(test,w,k)
+            w = self._train_hard(train_data=self.train,lc=lc,k=k,max_ite= max_ite,target_error = target_error, nw = nw)
+        self._test(self.test,w,k)
         return w
 
 #
@@ -254,11 +261,11 @@ class perceptron:
         self.weights_df.to_csv('a_weights.csv',index = False)
 
 def main():
-    perc = perceptron('groupB.txt')
-    w = perc.predict(type = 'hard',lc=0.1,k=0.2,max_ite= 5000,target_error = 40, nw = 3)
+    perc = perceptron('groupA.txt')
+    w = perc.predict(type = 'hard',lc=0.1,k=0.2,max_ite= 5000,target_error = 0.00001, nw = 3)
     print(f"weights: {w} TE: {perc.te}")
-    perc.plot_all(w)
-    perc.save_weights()
+    perc.plot_all()
+    #perc.save_weights()
 
 if __name__ == '__main__':
     main()
